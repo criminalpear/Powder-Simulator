@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Sand Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #canvas {
+            border: 1px solid #000;
+            background-color: #fff;
+            cursor: crosshair;
+        }
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        select {
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="controls">
+        <select id="material">
+            <option value="sand">Sand</option>
+            <option value="water">Water</option>
+            <option value="stone">Stone</option>
+            <option value="fire">Fire</option>
+            <option value="plant">Plant</option>
+            <option value="erase">Erase</option>
+        </select>
+        <button id="clear">Clear</button>
+        <button id="pause">Pause</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const materialSelect = document.getElementById('material');
+        const clearBtn = document.getElementById('clear');
+        const pauseBtn = document.getElementById('pause');
+
+        // Grid settings - for realism, use a higher resolution (e.g., 400x300 cells)
+        // But beware: higher = slower. Adjust based on performance.
+        const WIDTH = 400;
+        const HEIGHT = 300;
+        const CELL_SIZE = 2; // Pixel size per cell for rendering
+        canvas.width = WIDTH * CELL_SIZE;
+        canvas.height = HEIGHT * CELL_SIZE;
+
+        // Material types (enums for clarity)
+        const MATERIALS = {
+            EMPTY: 0,
+            SAND: 1,
+            WATER: 2,
+            STONE: 3,
+            FIRE: 4,
+            PLANT: 5,
+            BURNING_PLANT: 6 // Intermediate state for burning
+        };
+
+        // Colors for each material
+        const COLORS = {
+            [MATERIALS.EMPTY]: '#ffffff',
+            [MATERIALS.SAND]: '#f4a460',
+            [MATERIALS.WATER]: '#4169e1',
+            [MATERIALS.STONE]: '#808080',
+            [MATERIALS.FIRE]: '#ff4500',
+            [MATERIALS.PLANT]: '#228b22',
+            [MATERIALS.BURNING_PLANT]: '#ff8c00'
+        };
+
+        // Grid: 2D array [HEIGHT][WIDTH]
+        let grid = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(MATERIALS.EMPTY));
+
+        // Simulation state
+        let isPaused = false;
+        let mouseDown = false;
+        let currentMaterial = MATERIALS.SAND;
+        let brushSize = 5; // Radius for placing materials
+
+        // Update material based on selection
+        materialSelect.addEventListener('change', () => {
+            const val = materialSelect.value;
+            if (val === 'erase') {
+                currentMaterial = 'erase';
+            } else {
+                currentMaterial = MATERIALS[val.toUpperCase()];
+            }
+        });
+
+        // Clear grid
+        clearBtn.addEventListener('click', () => {
+            grid = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(MATERIALS.EMPTY));
+        });
+
+        // Pause/resume
+        pauseBtn.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+        });
+
+        // Mouse events for placing materials
+        canvas.addEventListener('mousedown', () => { mouseDown = true; });
+        canvas.addEventListener('mouseup', () => { mouseDown = false; });
+        canvas.addEventListener('mouseleave', () => { mouseDown = false; });
+        canvas.addEventListener('mousemove', placeMaterial);
+
+        function placeMaterial(e) {
+            if (!mouseDown) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+            const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+            for (let dy = -brushSize; dy <= brushSize; dy++) {
+                for (let dx = -brushSize; dx <= brushSize; dx++) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < WIDTH && ny >= 0 && ny < HEIGHT && (dx*dx + dy*dy <= brushSize*brushSize)) {
+                        if (currentMaterial === 'erase') {
+                            grid[ny][nx] = MATERIALS.EMPTY;
+                        } else {
+                            grid[ny][nx] = currentMaterial;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Simulation update rules
+        function updateGrid() {
+            const newGrid = grid.map(row => row.slice()); // Copy grid
+
+            // Iterate from bottom to top (important for falling physics)
+            for (let y = HEIGHT - 1; y >= 0; y--) {
+                for (let x = 0; x < WIDTH; x++) {
+                    const cell = grid[y][x];
+                    if (cell === MATERIALS.EMPTY) continue;
+
+                    // Sand: falls down, or diagonally if blocked
+                    if (cell === MATERIALS.SAND) {
+                        if (y + 1 < HEIGHT && grid[y + 1][x] === MATERIALS.EMPTY) {
+                            newGrid[y + 1][x] = MATERIALS.SAND;
+                            newGrid[y][x] = MATERIALS.EMPTY;
+                        } else if (y + 1 < HEIGHT && x - 1 >= 0 && grid[y + 1][x - 1] === MATERIALS.EMPTY) {
+                            newGrid[y + 1][x - 1] = MATERIALS.SAND;
+                            newGrid[y][x] = MATERIALS.EMPTY;
+                        } else if (y + 1 < HEIGHT && x + 1 < WIDTH && grid[y + 1][x + 1] === MATERIALS.EMPTY) {
+                            newGrid[y + 1][x + 1] = MATERIALS.SAND;
+                            newGrid[y][x] = MATERIALS.EMPTY;
+                        }
+                    }
+
+                    // Water: falls faster, spreads sideways
+                    if (cell === MATERIALS.WATER) {
+                        if (y + 1 < HEIGHT && grid[y + 1][x] === MATERIALS.EMPTY) {
+                            newGrid[y + 1][x] = MATERIALS.WATER;
+                            newGrid[y][x] = MATERIALS.EMPTY;
+                        } else if (y + 1 < HEIGHT && x - 1 >= 0 && grid[y + 1][x - 1] === MATERIALS.EMPTY) {
+                            newGrid[y + 1][x - 1] = MATERIALS.WATER;
+                            newGrid[y][x] = MATERIALS.EMPTY;
+                        } else if (y + 1 < HEIGHT && x + 1 < WIDTH && grid[y + 1][x + 1] === MATERIALS.EMPTY) {
+                            newGrid[y + 1][x + 1] = MATERIALS.WATER;
+                            newGrid[y][x] = MATERIALS.EMPTY;
+                        } else if (x - 1 >= 0 && grid[y][x - 1] === MATERIALS.EMPTY && Math.random() > 0.5) {
+                            newGrid[y][x - 1] = MATERIALS.WATER;
+                            newGrid[y][x] = MATERIALS.EMPTY;
+                        } else if (x + 1 < WIDTH && grid[y][x + 1] === MATERIALS.EMPTY) {
+                            newGrid[y][x + 1] = MATERIALS.WATER;
+                            newGrid[y][x] = MATERIALS.EMPTY;
+                        }
+                    }
+
+                    // Stone: static, doesn't move
+
+                    // Fire: rises up, spreads, burns plants
+                    if (cell === MATERIALS.FIRE || cell === MATERIALS.BURNING_PLANT) {
+                        // Burn nearby plants
+                        const directions = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+                        for (let [dx, dy] of directions) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            if (nx >= 0 && nx < WIDTH && ny >= 0 && ny < HEIGHT && grid[ny][nx] === MATERIALS.PLANT && Math.random() < 0.3) {
+                                newGrid[ny][nx] = MATERIALS.BURNING_PLANT;
+                            }
+                        }
+
+                        // Fire rises or spreads
+                        if (cell === MATERIALS.FIRE) {
+                            if (y - 1 >= 0 && grid[y - 1][x] === MATERIALS.EMPTY && Math.random() < 0.8) {
+                                newGrid[y - 1][x] = MATERIALS.FIRE;
+                            } else if (Math.random() < 0.1) {
+                                newGrid[y][x] = MATERIALS.EMPTY; // Fade out
+                            }
+                        } else if (cell === MATERIALS.BURNING_PLANT) {
+                            if (Math.random() < 0.2) {
+                                newGrid[y][x] = MATERIALS.FIRE; // Turn to fire
+                            } else if (Math.random() < 0.05) {
+                                newGrid[y][x] = MATERIALS.EMPTY; // Burn out
+                            }
+                        }
+                    }
+
+                    // Plant: grows slowly upwards if water nearby
+                    if (cell === MATERIALS.PLANT) {
+                        if (y - 1 >= 0 && grid[y - 1][x] === MATERIALS.EMPTY && hasNearbyWater(x, y) && Math.random() < 0.01) {
+                            newGrid[y - 1][x] = MATERIALS.PLANT;
+                        }
+                    }
+                }
+            }
+
+            grid = newGrid;
+        }
+
+        // Helper: check for water nearby
+        function hasNearbyWater(x, y) {
+            const directions = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+            for (let [dx, dy] of directions) {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx >= 0 && nx < WIDTH && ny >= 0 && ny < HEIGHT && grid[ny][nx] === MATERIALS.WATER) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Render the grid
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let y = 0; y < HEIGHT; y++) {
+                for (let x = 0; x < WIDTH; x++) {
+                    const cell = grid[y][x];
+                    if (cell !== MATERIALS.EMPTY) {
+                        ctx.fillStyle = COLORS[cell];
+                        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                    }
+                }
+            }
+        }
+
+        // Main loop
+        function loop() {
+            if (!isPaused) {
+                updateGrid();
+            }
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>
