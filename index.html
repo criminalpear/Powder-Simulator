@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quantum Infinite — Infinite Craft Sandbox</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <h1>Quantum Infinite</h1>
+    <div class="tabs">
+      <button id="tab-sim" class="active">Sim</button>
+      <button id="tab-ency">Encyclopedia</button>
+      <button id="tab-settings">Settings</button>
+    </div>
+
+    <div id="panel-sim" class="panel">
+      <label>Material
+        <select id="material"></select>
+      </label>
+      <label>Brush <input id="brushSize" type="range" min="1" max="60" value="6"/><span id="brushVal">6</span></label>
+      <label>Shape
+        <select id="brushShape">
+          <option value="circle">Circle</option>
+          <option value="square">Square</option>
+          <option value="diamond">Diamond</option>
+        </select>
+      </label>
+      <div class="row">
+        <button id="pause">Pause</button>
+        <button id="clear">Clear</button>
+        <button id="preset-seed">Seed World</button>
+      </div>
+      <div class="info">
+        <div>FPS: <span id="fps">0</span></div>
+        <div>Particles: <span id="count">0</span></div>
+      </div>
+    </div>
+
+    <div id="panel-ency" class="panel hidden">
+      <h2>Encyclopedia</h2>
+      <div id="ency-list" class="ency-list"></div>
+    </div>
+
+    <div id="panel-settings" class="panel hidden">
+      <h2>Settings</h2>
+      <label>Proxy URL (optional for GPT generation)
+        <input id="proxyUrl" placeholder="https://my-proxy.example.com/api/generate" />
+      </label>
+      <div class="muted">If you deploy a serverless proxy holding your OpenAI key, paste its URL here. If blank, deterministic generator is used.</div>
+      <label><input id="useProxy" type="checkbox" /> Enable proxy (use only if proxy URL is set)</label>
+      <div class="muted">Unlocked materials and settings are saved to localStorage.</div>
+      <div class="row">
+        <button id="export-save">Export Save</button>
+        <button id="import-save">Import Save</button>
+        <input id="fileInput" type="file" accept=".json" style="display:none" />
+      </div>
+    </div>
+
+    <footer class="footer">
+      <small>Deterministic infinite generator — Safe for public hosting. Use a proxy to enable GPT.</small>
+    </footer>
+  </aside>
+
+  <main class="main">
+    <canvas id="canvas"></canvas>
+    <canvas id="mini" class="mini"></canvas>
+  </main>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
