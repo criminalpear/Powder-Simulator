@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quantum Sand — Ultra Tier Edition</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <h1>Quantum Sand — Ultra Tier</h1>
+
+      <div class="control-group">
+        <label for="material">Material</label>
+        <select id="material"></select>
+      </div>
+
+      <div class="control-group horizontal">
+        <label for="brushSize">Brush</label>
+        <input id="brushSize" type="range" min="1" max="60" value="6" />
+        <output id="brushSizeValue">6</output>
+      </div>
+
+      <div class="control-group horizontal">
+        <label for="brushShape">Shape</label>
+        <select id="brushShape">
+          <option value="circle">Circle</option>
+          <option value="square">Square</option>
+          <option value="diamond">Diamond</option>
+        </select>
+        <label><input id="symmetry" type="checkbox" /> Mirror</label>
+      </div>
+
+      <div class="control-group horizontal">
+        <label for="simSpeed">Sim ms</label>
+        <input id="simSpeed" type="range" min="10" max="200" value="30" />
+        <output id="simSpeedValue">30</output>
+      </div>
+
+      <div class="control-group horizontal">
+        <label for="gravity">Gravity</label>
+        <input id="gravity" type="range" min="0" max="2" step="0.1" value="1" />
+        <output id="gravityValue">1</output>
+      </div>
+
+      <div class="control-group horizontal">
+        <label for="wind">Wind</label>
+        <input id="wind" type="range" min="-1" max="1" step="0.1" value="0" />
+        <output id="windValue">0</output>
+      </div>
+
+      <div class="control-group">
+        <label>Presets</label>
+        <div class="preset-row">
+          <button id="presetVolcano">Volcano</button>
+          <button id="presetRain">Rain</button>
+          <button id="presetForest">Forest</button>
+          <button id="presetThunder">Thunderstorm</button>
+          <button id="presetExplosion">Explosion Test</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Actions</label>
+        <div class="preset-row">
+          <button id="pause">Pause</button>
+          <button id="clear">Clear</button>
+          <button id="undo">Undo</button>
+          <button id="redo">Redo</button>
+        </div>
+        <div class="preset-row">
+          <button id="save">Save</button>
+          <button id="load">Load File</button>
+          <input id="loadFile" type="file" accept=".json" style="display:none" />
+          <button id="exportImage">Export PNG</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>View</label>
+        <label><input id="heatmap" type="checkbox" /> Heatmap overlay</label>
+        <label><input id="showMini" type="checkbox" checked /> Mini-map</label>
+        <label><input id="slowMo" type="checkbox" /> Slow motion</label>
+        <label><input id="soundToggle" type="checkbox" /> Sound effects</label>
+      </div>
+
+      <div class="material-editor">
+        <h2>Create Material</h2>
+        <input id="customName" placeholder="Name" />
+        <input id="customColor" type="color" value="#ff0055" />
+        <input id="customDensity" type="number" min="0" max="10" step="0.1" value="1" />
+        <select id="customFlow">
+          <option value="powder">Powder</option>
+          <option value="liquid">Liquid</option>
+          <option value="slow_liquid">Slow Liquid</option>
+          <option value="gas_up">Gas</option>
+          <option value="static">Static</option>
+        </select>
+        <label><input id="customFlammable" type="checkbox" /> Flammable</label>
+        <button id="addCustom">Add</button>
+      </div>
+
+      <div class="stats">
+        <p>FPS: <span id="fps">0</span></p>
+        <p>Particles: <span id="particleCount">0</span></p>
+        <p>Temp Avg: <span id="avgTemp">20</span>°C</p>
+      </div>
+
+      <div class="help">
+        <h3>Shortcuts</h3>
+        <ul>
+          <li>Space — Pause / Resume</li>
+          <li>1..9 — Quick material slots</li>
+          <li>Z / Y — Undo / Redo</li>
+          <li>C — Clear</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="canvas-wrap">
+      <canvas id="canvas"></canvas>
+      <canvas id="mini" class="mini-map"></canvas>
+      <div id="cursor" class="cursor"></div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
