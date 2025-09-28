@@ -208,22 +208,53 @@ document.addEventListener('DOMContentLoaded', ()=>{
     'water+oil': {result:'emulsion', create:{id:'emulsion', name:'Emulsion', color:'#6f5070', flow:'liquid', density:0.7, description:'Mixed liquid.'}}
   };
 
-  function attemptMix(a,b,x,y){
-    const key=[a,b].sort().join('+');
-    if(explicitRecipes[key]){
-      const r=explicitRecipes[key].create;
-      if(!MATERIALS[r.id]) registerMaterial(r);
-      createResultAt(r.id,x,y);
-      discoverMaterial(r.id);
-      return;
-    }
-    const parents=[MATERIALS[a],MATERIALS[b]].filter(Boolean);
-    if(parents.length<2) return;
-    const newMat=deterministicMaterialFrom(parents);
-    if(!MATERIALS[newMat.id]) registerMaterial(newMat);
-    createResultAt(newMat.id,x,y);
-    discoverMaterial(newMat.id);
+function attemptMix(a, b, x, y) {
+  const key = [a, b].sort().join('+');
+  
+  // First, check explicit recipes
+  if (explicitRecipes[key]) {
+    const r = explicitRecipes[key].create;
+    if (!MATERIALS[r.id]) registerMaterial(r);
+    createResultAt(r.id, x, y);
+    discoverMaterial(r.id);
+    return;
   }
+
+  // Prevent duplicate materials: check if deterministic material already exists
+  const parents = [MATERIALS[a], MATERIALS[b]].filter(Boolean);
+  if (parents.length < 2) return;
+
+  // Deterministic ID for this combination
+  const seedString = parents.map(p => p.id).sort().join('|');
+  const h = Math.abs(cyrb53(seedString)) % 100000;
+  const name = parents.map(p => p.name.substring(0,3)).join('') + (h % 100);
+  const id = generateId(name, h);
+
+  // If it already exists, use the existing one
+  let newMat;
+  if (MATERIALS[id]) {
+    newMat = MATERIALS[id];
+  } else {
+    const color = blendColor(parents.map(p => p.color));
+    const flow = pickFlow(parents);
+    newMat = {
+      id,
+      name: name[0].toUpperCase() + name.slice(1),
+      color,
+      flow,
+      density: Math.max(0.05, parents.reduce((s, p) => s + (p.density || 1), 0) / parents.length * (1 + (h % 11 - 5)/50)),
+      flammable: parents.some(p => p.flammable),
+      conductive: parents.some(p => p.conductive),
+      description: `A ${flow} material formed from ${parents.map(p => p.name).join(', ')}.`,
+      source: 'deterministic'
+    };
+    registerMaterial(newMat);
+  }
+
+  createResultAt(newMat.id, x, y);
+  discoverMaterial(newMat.id);
+}
+
 
   function createResultAt(id,x,y){ if(x<0||x>=WIDTH||y<0||y>=HEIGHT) return; grid[y][x]=id; temp[y][x]=(MATERIALS[id]&&MATERIALS[id].flow==='gas')?300:20; }
   function discoverMaterial(id){ if(UNLOCKED.has(id)) return; UNLOCKED.add(id); persistUnlocked(); const node=document.getElementById('ency-'+id); if(node) node.style.boxShadow='0 4px 18px rgba(79,70,229,0.3)'; }
