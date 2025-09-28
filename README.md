@@ -10,16 +10,16 @@
 - More presets: Thunderstorm and Explosion Test.
 - Optional sound effects.
 
-# Files:
+## Files:
 - index.html
 - styles.css
 - script.js
 - README.txt
 
-# How to run:
+## How to run:
 Open index.html in a modern browser.
 
-# Shortcuts:
+## Shortcuts:
 Space — Pause/Resume
 1..9 — quick material slots
 Z / Y — Undo / Redo
